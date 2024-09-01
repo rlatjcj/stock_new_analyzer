@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stock_news_analyzer"
+dynamic = ["version"]
+description = "Gather, summarize, and analyze stock related news with LLM🧠"
+readme = "README.md"
+requires-python = ">=3.11.9"
+maintainers = [
+    {name = "Sungchul Kim", email = "sungchul7039@gmail.com"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "bs4==0.0.2",
+    "langchain-community==0.2.15",
+    "python-dotenv==1.0.1",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "stock_news_analyzer.__version__"}
