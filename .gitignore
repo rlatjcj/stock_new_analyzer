@@ -1,5 +1,7 @@
 .env
+.vscode/
 .tox/
+.coverage
 venv
 
 __pycache__/
