@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import patch
 
 import pytest
@@ -21,7 +22,7 @@ def test_main_with_company_code(mock_input, mock_get_news_link, capsys):
         {"date": "2023.05.01", "title": "Test News", "link": "https://test.com"}
     ]
 
-    main()
+    asyncio.run(main())
 
     captured = capsys.readouterr()
     assert "총 1개의 뉴스 링크를 찾았습니다:" in captured.out
@@ -33,7 +34,7 @@ def test_main_with_company_name(mock_input, mock_get_news_link, capsys):
         {"date": "2023.05.01", "title": "Test News", "link": "https://test.com"}
     ]
 
-    main()
+    asyncio.run(main())
 
     captured = capsys.readouterr()
     assert "총 1개의 뉴스 링크를 찾았습니다:" in captured.out
@@ -45,7 +46,7 @@ def test_main_with_date_range(mock_input, mock_get_news_link, capsys):
         {"date": "2023.05.15", "title": "Test News", "link": "https://test.com"}
     ]
 
-    main()
+    asyncio.run(main())
 
     captured = capsys.readouterr()
     assert "총 1개의 뉴스 링크를 찾았습니다:" in captured.out
@@ -55,7 +56,7 @@ def test_main_no_news_found(mock_input, mock_get_news_link, capsys):
     mock_input.side_effect = ["000660", "", ""]
     mock_get_news_link.return_value = None
 
-    main()
+    asyncio.run(main())
 
     captured = capsys.readouterr()
     assert "뉴스 링크를 찾을 수 없습니다." in captured.out
@@ -63,7 +64,7 @@ def test_main_no_news_found(mock_input, mock_get_news_link, capsys):
 def test_main_invalid_date_format(mock_input, capsys):
     mock_input.side_effect = ["000660", "2023-05-01", ""]
 
-    main()
+    asyncio.run(main())
 
     captured = capsys.readouterr()
     assert "잘못된 시작 날짜 형식입니다. YYYY.MM.DD 형식으로 입력해주세요." in captured.out
