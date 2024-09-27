@@ -2,11 +2,10 @@ import argparse
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 
-from stock_news_analyzer.finder import get_news_link
+from stock_news_analyzer.finder import get_news_list
 from stock_news_analyzer.model import get_available_models
 
 logger = logging.getLogger(__name__)
@@ -55,53 +54,17 @@ def get_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def inspect_date_format(date_str: str) -> bool:
-    date_format = "%Y.%m.%d"
-    try:
-        datetime.strptime(date_str, date_format)
-        return True
-    except ValueError:
-        logger.error(f"잘못된 날짜 형식입니다: {date_str}. YYYY.MM.DD 형식으로 입력해주세요.")
-        return False
-
-
-async def get_news_list(args: argparse.Namespace) -> List[Dict[str, Any]]:
-    # 날짜 형식 검증
-    if not all(inspect_date_format(date) for date in [args.date_from, args.date_to]):
-        return []
-
-    logger.info(f"뉴스 검색 시작: 회사 - {args.company}, 기간 - {args.date_from} ~ {args.date_to}")
-
-    # 해당 날짜의 뉴스 가져오기
-    news_links: List[Dict[str, Any]] = await get_news_link(
-        code=args.company if args.company.isdigit() else None,
-        company=args.company if not args.company.isdigit() else None,
-        date_from=args.date_from,
-        date_to=args.date_to,
-        max_pages=args.max_pages
-    )
-
-    logger.info(f"총 {len(news_links)}개의 뉴스를 찾았습니다.")
-
-    # LLM 모델 로드 (필요한 경우 사용)
-    # llm = load_llm(args.model)
-    # logger.info(f"LLM 모델 '{args.model}'을 로드했습니다.")
-
-    if news_links:
-        logger.info(f"총 {len(news_links)}개의 뉴스 링크를 찾았습니다:")
-        for news in news_links:
-            logger.info(f"[{news['date']}] {news['title']} - {news['link']}")
-    else:
-        logger.info("뉴스 링크가 없습니다.")
-
-    return news_links
-
-
-def main() -> List[Dict[str, Any]]:
+def main() -> None:
     load_dotenv()
     args = get_arguments()
     setup_logging(args.log_level)
-    return asyncio.run(get_news_list(args))
+
+    news_links = asyncio.run(get_news_list(  # noqa: F841
+        company=args.company,
+        date_from=args.date_from,
+        date_to=args.date_to,
+        max_pages=args.max_pages
+    ))
 
 
 if __name__ == "__main__":

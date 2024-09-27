@@ -129,3 +129,46 @@ async def get_news_link(
 
     logger.info(f"총 {len(crawled_links)}개의 뉴스를 찾았습니다.")
     return crawled_links
+
+
+def inspect_date_format(date_str: str) -> bool:
+    date_format = "%Y.%m.%d"
+    try:
+        datetime.strptime(date_str, date_format)
+        return True
+    except ValueError:
+        logger.error(f"잘못된 날짜 형식입니다: {date_str}. YYYY.MM.DD 형식으로 입력해주세요.")
+        return False
+
+
+async def get_news_list(
+    company: str,
+    date_from: str,
+    date_to: str,
+    max_pages: int
+) -> List[Dict[str, Any]]:
+    # 날짜 형식 검증
+    if not all(inspect_date_format(date) for date in [date_from, date_to]):
+        return []
+
+    logger.info(f"뉴스 검색 시작: 회사 - {company}, 기간 - {date_from} ~ {date_to}")
+
+    # 해당 날짜의 뉴스 가져오기
+    news_links: List[Dict[str, Any]] = await get_news_link(
+        code=company if company.isdigit() else None,
+        company=company if not company.isdigit() else None,
+        date_from=date_from,
+        date_to=date_to,
+        max_pages=max_pages
+    )
+
+    logger.info(f"총 {len(news_links)}개의 뉴스를 찾았습니다.")
+
+    if news_links:
+        logger.info(f"총 {len(news_links)}개의 뉴스 링크를 찾았습니다:")
+        for news in news_links:
+            logger.info(f"[{news['date']}] {news['title']} - {news['link']}")
+    else:
+        logger.info("뉴스 링크가 없습니다.")
+
+    return news_links
