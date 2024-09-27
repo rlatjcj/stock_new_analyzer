@@ -1,6 +1,4 @@
-import asyncio
 import logging
-import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -13,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def clean_title(title: str) -> str:
-    return re.sub(r'\[.*?\]|\(.*?\)|…|\.\.\.', '', title).strip()
+    return title.strip()
 
 
 async def fetch(session: aiohttp.ClientSession, url: str) -> Any:
@@ -26,7 +24,7 @@ async def get_news_link(
     company: Optional[str] = None,
     date_from: str = "",
     date_to: str = "",
-    max_pages: int = 100,
+    max_pages: int = 1,
 ) -> List[Dict[str, Any]]:
     """뉴스 링크를 비동기적으로 가져옵니다.
 
@@ -53,33 +51,31 @@ async def get_news_link(
     _code: str = (
         code if code is not None
         else COMPANY_CODE.get(company or '', '')
-    )  # company가 없을 경우 빈 문자열 반환
+    )
 
     crawled_links: List[Dict[str, Any]] = []
-    unique_titles = set()
-    unique_links = set()
     today = datetime.now().date()
 
     async with aiohttp.ClientSession() as session:
-        tasks = []
         for page in range(1, max_pages + 1):
             url = f"https://finance.naver.com/item/news_news.nhn?code={_code}&page={page}"
-            tasks.append(fetch(session, url))
+            html_content = await fetch(session, url)
+            html = BeautifulSoup(html_content, "lxml")
 
-        pages = await asyncio.gather(*tasks)
+            # relation_lst 클래스를 가진 tr과 그 하위 요소들을 모두 제외
+            for relation_lst in html.select("tr.relation_lst"):
+                relation_lst.decompose()
 
-        for page_num, source_code in enumerate(pages, start=1):
-            html = BeautifulSoup(source_code, "lxml")
-            news_items = html.select("table.type5 tr")
-            logger.info(f"페이지 {page_num}에서 {len(news_items)}개의 뉴스를 찾았습니다.")
+            # 남은 tr 요소들 중 hide_news 클래스를 가진 것을 제외하고 선택
+            news_items = html.select("table.type5 tbody tr:not(.hide_news)")
 
-            if not news_items:
-                break
+            for item in news_items:
+                logger.debug(item.text)
 
-            stop_crawling = False
             for item in news_items:
                 date_elem = item.select_one(".date")
                 if not date_elem:
+                    logger.debug("날짜 요소를 찾지 못했습니다.")
                     continue
 
                 date = date_elem.get_text().strip()
@@ -89,13 +85,15 @@ async def get_news_link(
                 title_elem = item.select_one(".title")
                 if title_elem and isinstance(title_elem, Tag):
                     title_text = title_elem.get_text(strip=True)
-                    title_text = re.sub("\n", "", title_text) if title_text else ""
+                    title_text = clean_title(title_text)
                     link_elem = title_elem.find('a')
                     if link_elem and isinstance(link_elem, Tag):
                         link = f"https://finance.naver.com{link_elem.get('href', '')}"
                     else:
+                        logger.debug("링크 요소를 찾지 못했습니다.")
                         continue
                 else:
+                    logger.debug("제목 요소를 찾지 못했습니다.")
                     continue
 
                 try:
@@ -113,7 +111,6 @@ async def get_news_link(
                     if news_date.date() < start_date:
                         logger.debug(
                             f"시작 날짜 이전의 뉴스를 발견했습니다: {date}. 크롤링을 중단합니다.")
-                        stop_crawling = True
                         break
 
                 if date_to:
@@ -121,15 +118,6 @@ async def get_news_link(
                     if news_date.date() > end_date:
                         logger.debug(f"종료 날짜 이후의 뉴스 건너뛰기: {date}")
                         continue
-
-                clean_title_text = clean_title(title_text)
-
-                if clean_title_text in unique_titles or link in unique_links:
-                    logger.debug(f"중복된 뉴스 건너뛰기: {date} - {title_text}")
-                    continue
-
-                unique_titles.add(clean_title_text)
-                unique_links.add(link)
 
                 crawled_links.append({
                     "date": date,
@@ -139,7 +127,5 @@ async def get_news_link(
                 })
                 logger.debug(f"Added news: {date} - {title_text}")
 
-            if stop_crawling:
-                break
-
+    logger.info(f"총 {len(crawled_links)}개의 뉴스를 찾았습니다.")
     return crawled_links

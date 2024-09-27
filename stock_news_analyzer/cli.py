@@ -6,15 +6,18 @@ from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 
-from stock_news_analyzer.filter import filter_similar_news
 from stock_news_analyzer.finder import get_news_link
-from stock_news_analyzer.model import get_available_models, load_llm
+from stock_news_analyzer.model import get_available_models
 
-# 로깅 설정
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+def setup_logging(log_level: str) -> None:
+    numeric_level = getattr(logging, log_level.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError(f'Invalid log level: {log_level}')
+    logging.basicConfig(
+        level=numeric_level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 def get_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="주식 뉴스 분석기")
@@ -35,8 +38,19 @@ def get_arguments() -> argparse.Namespace:
         choices=get_available_models(),
         default="gpt-3.5-turbo"
     )
+    parser.add_argument(
+        "-p", "--max_pages",
+        help="크롤링할 최대 페이지 수",
+        type=int,
+        default=5
+    )
+    parser.add_argument(
+        "--log-level",
+        help="로깅 레벨",
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO'
+    )
     return parser.parse_args()
-
 
 def inspect_date_format(date_str: str) -> bool:
     date_format = "%Y.%m.%d"
@@ -46,7 +60,6 @@ def inspect_date_format(date_str: str) -> bool:
     except ValueError:
         logger.error(f"잘못된 날짜 형식입니다: {date_str}. YYYY.MM.DD 형식으로 입력해주세요.")
         return False
-
 
 async def get_news_list(args: argparse.Namespace) -> List[Dict[str, Any]]:
     # 날짜 형식 검증
@@ -60,33 +73,30 @@ async def get_news_list(args: argparse.Namespace) -> List[Dict[str, Any]]:
         code=args.company if args.company.isdigit() else None,
         company=args.company if not args.company.isdigit() else None,
         date_from=args.date_from,
-        date_to=args.date_to
+        date_to=args.date_to,
+        max_pages=args.max_pages
     )
 
     logger.info(f"총 {len(news_links)}개의 뉴스를 찾았습니다.")
 
-    # LLM 모델 로드
-    llm = load_llm(args.model)
-    logger.info(f"LLM 모델 '{args.model}'을 로드했습니다.")
+    # LLM 모델 로드 (필요한 경우 사용)
+    # llm = load_llm(args.model)
+    # logger.info(f"LLM 모델 '{args.model}'을 로드했습니다.")
 
-    # 유사한 뉴스 필터링
-    filtered_news = filter_similar_news(news_links, llm)
-
-    if filtered_news:
-        logger.info(f"총 {len(filtered_news)}개의 필터링된 뉴스 링크를 찾았습니다:")
-        for news in filtered_news:
+    if news_links:
+        logger.info(f"총 {len(news_links)}개의 뉴스 링크를 찾았습니다:")
+        for news in news_links:
             logger.info(f"[{news['date']}] {news['title']} - {news['link']}")
     else:
-        logger.info("필터링된 뉴스 링크가 없습니다.")
+        logger.info("뉴스 링크가 없습니다.")
 
-    return filtered_news
-
+    return news_links
 
 def main() -> List[Dict[str, Any]]:
     load_dotenv()
     args = get_arguments()
+    setup_logging(args.log_level)
     return asyncio.run(get_news_list(args))
-
 
 if __name__ == "__main__":
     main()
