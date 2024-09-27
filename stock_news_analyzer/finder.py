@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import aiohttp
-from bs4 import BeautifulSoup, Tag  # Tag를 명시적으로 import  # Tag를 명시적으로 import
+from bs4 import BeautifulSoup, Tag
 
 from stock_news_analyzer.utils.company_code import COMPANY_CODE
 
