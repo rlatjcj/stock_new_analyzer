@@ -60,6 +60,7 @@ disallow_untyped_defs = true
 exclude = [
     'tests/'
 ]
+disable_error_code = ["no-any-return"]
 
 [tool.tox]
 legacy_tox_ini = """

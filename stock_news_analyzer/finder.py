@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -17,6 +18,13 @@ def clean_title(title: str) -> str:
 async def fetch(session: aiohttp.ClientSession, url: str) -> Any:
     async with session.get(url) as response:
         return await response.text()
+
+
+def extract_article_info(href: str) -> tuple[str, str]:
+    match = re.search(r'article_id=(\d+)&office_id=(\d+)', href)
+    if match:
+        return match.group(2), match.group(1)
+    return '', ''
 
 
 async def get_news_link(
@@ -86,9 +94,20 @@ async def get_news_link(
                 if title_elem and isinstance(title_elem, Tag):
                     title_text = title_elem.get_text(strip=True)
                     title_text = clean_title(title_text)
-                    link_elem = title_elem.find('a')
+                    link_elem = title_elem.find("a")
                     if link_elem and isinstance(link_elem, Tag):
-                        link = f"https://finance.naver.com{link_elem.get('href', '')}"
+                        href = link_elem.get("href")
+                        if href:
+                            office_id, article_id = extract_article_info(href)  # type: ignore[arg-type]
+                            if office_id and article_id:
+                                link = f"https://n.news.naver.com/mnews/article/{office_id}/{article_id}"
+                            else:
+                                logger.debug(
+                                    f"올바른 article_id와 office_id를 찾지 못했습니다: {href}")
+                                continue
+                        else:
+                            logger.debug("href 속성을 찾지 못했습니다.")
+                            continue
                     else:
                         logger.debug("링크 요소를 찾지 못했습니다.")
                         continue
@@ -162,13 +181,8 @@ async def get_news_list(
         max_pages=max_pages
     )
 
-    logger.info(f"총 {len(news_links)}개의 뉴스를 찾았습니다.")
-
     if news_links:
-        logger.info(f"총 {len(news_links)}개의 뉴스 링크를 찾았습니다:")
         for news in news_links:
             logger.info(f"[{news['date']}] {news['title']} - {news['link']}")
-    else:
-        logger.info("뉴스 링크가 없습니다.")
 
     return news_links

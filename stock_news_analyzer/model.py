@@ -1,11 +1,8 @@
 import os
-from typing import TYPE_CHECKING, List
+from typing import List
 
+from langchain_core.language_models.llms import BaseLLM
 from langchain_openai import ChatOpenAI
-
-if TYPE_CHECKING:
-    from langchain_core.language_models.llms import BaseLLM
-
 
 OPENAI_MODELS = [
     "gpt-4-1106-preview",
@@ -33,7 +30,7 @@ def get_available_models() -> List[str]:
     return OPENAI_MODELS
 
 
-def load_llm(model: str) -> "BaseLLM":
+def load_llm(model: str) -> BaseLLM:
     available_models = get_available_models()
     if model not in available_models:
         raise ValueError(
