@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def get_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="주식 뉴스 분석기")
-    parser.add_argument("company", help="회사 코드 또는 이름")
+    parser.add_argument("-c", "--company", required=True, help="회사 코드 또는 이름")
     parser.add_argument(
         "-f", "--date_from",
         help="시작 날짜 (YYYY.MM.DD 형식)",
@@ -48,12 +48,10 @@ def inspect_date_format(date_str: str) -> bool:
         return False
 
 
-async def main() -> None:
-    args = get_arguments()
-
+async def get_news_list(args: argparse.Namespace) -> List[Dict[str, Any]]:
     # 날짜 형식 검증
     if not all(inspect_date_format(date) for date in [args.date_from, args.date_to]):
-        return
+        return []
 
     logger.info(f"뉴스 검색 시작: 회사 - {args.company}, 기간 - {args.date_from} ~ {args.date_to}")
 
@@ -81,6 +79,14 @@ async def main() -> None:
     else:
         logger.info("필터링된 뉴스 링크가 없습니다.")
 
-if __name__ == "__main__":
+    return filtered_news
+
+
+def main() -> List[Dict[str, Any]]:
     load_dotenv()
-    asyncio.run(main())
+    args = get_arguments()
+    return asyncio.run(get_news_list(args))
+
+
+if __name__ == "__main__":
+    main()
