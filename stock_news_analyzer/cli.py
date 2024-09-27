@@ -1,23 +1,12 @@
 import argparse
 import asyncio
-import logging
 from datetime import datetime
 
 from dotenv import load_dotenv
 
 from stock_news_analyzer.finder import get_news_list
 from stock_news_analyzer.model import get_available_models
-
-logger = logging.getLogger(__name__)
-
-
-def setup_logging(log_level: str) -> None:
-    numeric_level = getattr(logging, log_level.upper(), None)
-    if not isinstance(numeric_level, int):
-        raise ValueError(f'Invalid log level: {log_level}')
-    logging.basicConfig(
-        level=numeric_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+from stock_news_analyzer.utils.logger import get_logger
 
 
 def get_arguments() -> argparse.Namespace:
@@ -57,7 +46,9 @@ def get_arguments() -> argparse.Namespace:
 def main() -> None:
     load_dotenv()
     args = get_arguments()
-    setup_logging(args.log_level)
+
+    # 전역 로깅 레벨 설정
+    get_logger(__name__, args.log_level)
 
     news_links = asyncio.run(get_news_list(  # noqa: F841
         company=args.company,

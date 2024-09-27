@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -6,8 +5,9 @@ import aiohttp
 from bs4 import BeautifulSoup, Tag
 
 from stock_news_analyzer.utils.company_code import COMPANY_CODE
+from stock_news_analyzer.utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def clean_title(title: str) -> str:
