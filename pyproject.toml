@@ -43,9 +43,10 @@ exclude = ["tests*"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+preview = true
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N"]
+select = ["E", "F", "I", "N", "E302"]
 ignore = []
 
 [tool.ruff.lint.per-file-ignores]

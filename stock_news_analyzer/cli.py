@@ -11,6 +11,7 @@ from stock_news_analyzer.model import get_available_models
 
 logger = logging.getLogger(__name__)
 
+
 def setup_logging(log_level: str) -> None:
     numeric_level = getattr(logging, log_level.upper(), None)
     if not isinstance(numeric_level, int):
@@ -18,6 +19,7 @@ def setup_logging(log_level: str) -> None:
     logging.basicConfig(
         level=numeric_level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
 
 def get_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="주식 뉴스 분석기")
@@ -52,6 +54,7 @@ def get_arguments() -> argparse.Namespace:
     )
     return parser.parse_args()
 
+
 def inspect_date_format(date_str: str) -> bool:
     date_format = "%Y.%m.%d"
     try:
@@ -60,6 +63,7 @@ def inspect_date_format(date_str: str) -> bool:
     except ValueError:
         logger.error(f"잘못된 날짜 형식입니다: {date_str}. YYYY.MM.DD 형식으로 입력해주세요.")
         return False
+
 
 async def get_news_list(args: argparse.Namespace) -> List[Dict[str, Any]]:
     # 날짜 형식 검증
@@ -92,11 +96,13 @@ async def get_news_list(args: argparse.Namespace) -> List[Dict[str, Any]]:
 
     return news_links
 
+
 def main() -> List[Dict[str, Any]]:
     load_dotenv()
     args = get_arguments()
     setup_logging(args.log_level)
     return asyncio.run(get_news_list(args))
+
 
 if __name__ == "__main__":
     main()

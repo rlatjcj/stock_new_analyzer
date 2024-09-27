@@ -15,6 +15,7 @@ def mock_requests_get():
         mock_get.return_value = mock_response
         yield mock_get
 
+
 @pytest.fixture
 def mock_bs4():
     with patch("stock_news_analyzer.finder.BeautifulSoup") as mock_bs4:
@@ -39,12 +40,14 @@ def mock_bs4():
         mock_bs4.return_value = mock_soup
         yield mock_bs4
 
+
 def test_get_news_link_with_code(mock_requests_get, mock_bs4):
     result = asyncio.run(get_news_link(code="000660"))
     assert result is not None
     assert len(result) == 5
     assert result[0]["title"] == "Test Title 0"
     assert result[0]["link"] == "https://finance.naver.com/test_link_0"
+
 
 def test_get_news_link_with_company(mock_requests_get, mock_bs4):
     result = asyncio.run(get_news_link(company="삼성전자"))
@@ -53,6 +56,7 @@ def test_get_news_link_with_company(mock_requests_get, mock_bs4):
     assert result[0]["title"] == "Test Title 0"
     assert result[0]["link"] == "https://finance.naver.com/test_link_0"
 
+
 def test_get_news_link_with_date_range(mock_requests_get, mock_bs4):
     result = asyncio.run(get_news_link(code="000660", date_from="2023.05.01", date_to="2023.05.31"))
     assert result is not None
@@ -60,12 +64,14 @@ def test_get_news_link_with_date_range(mock_requests_get, mock_bs4):
     assert result[0]["title"] == "Test Title 0"
     assert result[0]["link"] == "https://finance.naver.com/test_link_0"
 
+
 def test_get_news_link_max_pages(mock_requests_get, mock_bs4):
     result = asyncio.run(get_news_link(code="000660", max_pages=3))
     assert result is not None
     assert len(result) == 5
     assert result[0]["title"] == "Test Title 0"
     assert result[0]["link"] == "https://finance.naver.com/test_link_0"
+
 
 def test_get_news_link_error_handling(mock_requests_get):
     mock_requests_get.side_effect = Exception("Test error")
